@@ -1,5 +1,10 @@
 <?php
 
+// 1. Cargar el Autoloader Específico para tu Librería/SDK de Evolution API.
+// NOTA: Ajusta la ruta si tu carpeta principal es 'libraries' en lugar de 'libreries'
+require_once __DIR__ . "/EvolutionApi/autoload_evolution.php"; 
+
+
 use Libraries\EvolutionApi\EvolutionApiClient; 
 use Libraries\EvolutionApi\EvolutionApiConfig;
 
@@ -920,6 +925,7 @@ class Whatsapp extends Controllers {
             ]);
         }
     }
+
 
 
 }
