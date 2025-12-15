@@ -1,10 +1,5 @@
 <?php
 
-// 1. Cargar el Autoloader Específico para tu Librería/SDK de Evolution API.
-// NOTA: Ajusta la ruta si tu carpeta principal es 'libraries' en lugar de 'libreries'
-require_once __DIR__ . "/EvolutionApi/autoload_evolution.php"; 
-
-
 use Libraries\EvolutionApi\EvolutionApiClient; 
 use Libraries\EvolutionApi\EvolutionApiConfig;
 
@@ -64,6 +59,370 @@ class Whatsapp extends Controllers {
                 "details" => $resultado['curl_error'], 
                 "api_response" => $resultado['response'],
                 "http_code" => $resultado['status_code']
+            ]);
+        }
+    }
+
+    // --- FUNCIÓN 2: ENVIAR MEDIA CON OPCIONES AVANZADAS (EJEMPLO DE IMAGEN) ---
+    public function enviarImagenAvanzada($params): void {
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(["ok" => false, "error" => "Método no permitido. Use POST."]);
+            return;
+        }
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        // Parámetros Requeridos
+        $numero = $data['numero'] ?? null;
+        $mediaUrl = $data['mediaUrl'] ?? null; // URL o Base64 del archivo
+        $fileName = $data['fileName'] ?? 'ImagenEjemplo.png'; 
+        
+        // Parámetros Opcionales de Media
+        $caption = $data['caption'] ?? '¡Hola! Esta es una imagen de prueba con opciones avanzadas.';
+        $mediatype = $data['mediatype'] ?? 'image'; // image, video, document
+        $mimetype = $data['mimetype'] ?? 'image/png'; // Asegúrate que coincida con mediatype
+        
+        // Parámetros Opcionales Avanzados
+        $opcionesAvanzadas = [
+            'delay' => $data['delay'] ?? 1000, // 1000 milisegundos (1 segundo)
+            'linkPreview' => $data['linkPreview'] ?? false,
+            'mentionsEveryOne' => $data['mentionsEveryOne'] ?? false,
+            'mentioned' => $data['mentioned'] ?? [], // Array de JIDs a mencionar
+            'quoted' => $data['quoted'] ?? null, // Objeto con el mensaje a citar
+        ];
+        
+        if (!$numero || !$mediaUrl) {
+            http_response_code(400);
+            echo json_encode(["ok" => false, "error" => "Faltan parámetros requeridos (numero y mediaUrl)."]);
+            return;
+        }
+
+        // --- Configuración e Inicialización (Mantener como está en tu código) ---
+        $configParams = [
+            'api_url' => EVOLUTION_API_URL,
+            'api_token' => EVOLUTION_API_TOKEN,
+            'instance_key' => EVOLUTION_INSTANCE_KEY, 
+            'api_key' => EVOLUTION_API_KEY,
+        ];
+        EvolutionApiConfig::resetInstance();
+        $config = EvolutionApiConfig::getInstance($configParams);
+        $apiClient = new EvolutionApiClient($config);
+        
+        // --- LLAMADA A LA FUNCIÓN sendMedia ---
+        $resultado = $apiClient->sendMedia(
+            $numero, 
+            $mediaUrl, 
+            $fileName, 
+            $mediatype, 
+            $mimetype, 
+            $caption, 
+            $opcionesAvanzadas
+        );
+        
+        // --- Manejo de Respuesta (Debe ser similar al que ya tienes) ---
+        if (($resultado['status_code'] ?? 0) === 201) {
+            
+            http_response_code(201);
+            $mensaje = "Medio ({$mediatype}) enviado con éxito.";
+
+            echo json_encode([
+                "ok" => true, 
+                "mensaje" => $mensaje,
+                "data" => $resultado['response']
+            ]);
+            
+        } else {
+            // ERROR (400, 404, 500, o cURL error)
+            http_response_code($resultado['status_code'] ?? 500);
+
+            $apiResponse = $resultado['response'];
+            $specificErrorMessage = "Error al enviar el medio.";
+
+            if (is_array($apiResponse) && isset($apiResponse['error'])) {
+                $specificErrorMessage = "API Error: " . (is_string($apiResponse['error']) ? $apiResponse['error'] : json_encode($apiResponse['error']));
+            }
+            
+            if (!empty($resultado['curl_error'])) {
+                $specificErrorMessage = "cURL/Network Error: " . $resultado['curl_error'];
+            }
+
+            echo json_encode([
+                "ok" => false, 
+                "error" => $specificErrorMessage,
+                "details" => $resultado['curl_error'], 
+                "api_response" => $apiResponse,
+                "http_code" => $resultado['status_code'] ?? 500
+            ]);
+        }
+    }
+
+    // --- FUNCIÓN 3: ENVIAR NOTA DE VOZ (WHATSAPP AUDIO) CON OPCIONES AVANZADAS ---
+    public function enviarNotaDeVoz($params): void {
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(["ok" => false, "error" => "Método no permitido. Use POST."]);
+            return;
+        }
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        // Parámetros Requeridos
+        $numero = $data['numero'] ?? null;
+        $audioUrl = $data['audioUrl'] ?? null; // URL o Base64 del archivo de audio
+        
+        // Parámetros Opcionales Avanzados
+        $opcionesAvanzadas = [
+            'delay' => $data['delay'] ?? null, 
+            'linkPreview' => $data['linkPreview'] ?? null,
+            'mentionsEveryOne' => $data['mentionsEveryOne'] ?? null,
+            'mentioned' => $data['mentioned'] ?? [],
+            'quoted' => $data['quoted'] ?? null, 
+        ];
+        
+        if (!$numero || !$audioUrl) {
+            http_response_code(400);
+            echo json_encode(["ok" => false, "error" => "Faltan parámetros requeridos (numero y audioUrl)."]);
+            return;
+        }
+
+        // --- Configuración e Inicialización (Mantener como está en tu código) ---
+        $configParams = [
+            'api_url' => EVOLUTION_API_URL,
+            'api_token' => EVOLUTION_API_TOKEN,
+            'instance_key' => EVOLUTION_INSTANCE_KEY, 
+            'api_key' => EVOLUTION_API_KEY,
+        ];
+        EvolutionApiConfig::resetInstance();
+        $config = EvolutionApiConfig::getInstance($configParams);
+        $apiClient = new EvolutionApiClient($config);
+        
+        // --- LLAMADA A LA FUNCIÓN sendWhatsAppAudio ---
+        $resultado = $apiClient->sendWhatsAppAudio(
+            $numero, 
+            $audioUrl, 
+            $opcionesAvanzadas
+        );
+        
+        // --- Manejo de Respuesta (Asegurando manejo de 200/201 como éxito) ---
+        $statusCode = $resultado['status_code'] ?? 0;
+        if ($statusCode >= 200 && $statusCode < 300) {
+            
+            http_response_code($statusCode);
+            $mensaje = "Nota de voz enviada con éxito.";
+
+            echo json_encode([
+                "ok" => true, 
+                "mensaje" => $mensaje,
+                "data" => $resultado['response']
+            ]);
+            
+        } else {
+            // ERROR (4xx, 5xx, o cURL error)
+            http_response_code($statusCode > 0 ? $statusCode : 500);
+
+            $apiResponse = $resultado['response'];
+            $specificErrorMessage = "Error al enviar la nota de voz.";
+            
+            // Lógica de error general para ser consistente
+            if (is_array($apiResponse) && isset($apiResponse['error'])) {
+                $specificErrorMessage = "API Error: " . (is_string($apiResponse['error']) ? $apiResponse['error'] : json_encode($apiResponse['error']));
+            }
+            
+            if (!empty($resultado['curl_error'])) {
+                $specificErrorMessage = "cURL/Network Error: " . $resultado['curl_error'];
+            }
+
+            echo json_encode([
+                "ok" => false, 
+                "error" => $specificErrorMessage,
+                "details" => $resultado['curl_error'], 
+                "api_response" => $apiResponse,
+                "http_code" => $statusCode
+            ]);
+        }
+    }
+
+    // --- FUNCIÓN 4: ENVIAR STICKER (PEGATINA) CON OPCIONES AVANZADAS ---
+    public function enviarSticker($params): void {
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(["ok" => false, "error" => "Método no permitido. Use POST."]);
+            return;
+        }
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        // Parámetros Requeridos
+        $numero = $data['numero'] ?? null;
+        $stickerUrl = $data['stickerUrl'] ?? null; // URL o Base64 del sticker
+        
+        // Parámetros Opcionales Avanzados
+        $opcionesAvanzadas = [
+            'delay' => $data['delay'] ?? null, 
+            'linkPreview' => $data['linkPreview'] ?? null,
+            'mentionsEveryOne' => $data['mentionsEveryOne'] ?? null,
+            'mentioned' => $data['mentioned'] ?? [],
+            'quoted' => $data['quoted'] ?? null, 
+        ];
+        
+        if (!$numero || !$stickerUrl) {
+            http_response_code(400);
+            echo json_encode(["ok" => false, "error" => "Faltan parámetros requeridos (numero y stickerUrl)."]);
+            return;
+        }
+
+        // --- Configuración e Inicialización (Mantener como está en tu código) ---
+        $configParams = [
+            'api_url' => EVOLUTION_API_URL,
+            'api_token' => EVOLUTION_API_TOKEN,
+            'instance_key' => EVOLUTION_INSTANCE_KEY, 
+            'api_key' => EVOLUTION_API_KEY,
+        ];
+        EvolutionApiConfig::resetInstance();
+        $config = EvolutionApiConfig::getInstance($configParams);
+        $apiClient = new EvolutionApiClient($config);
+        
+        // --- LLAMADA A LA FUNCIÓN sendSticker ---
+        $resultado = $apiClient->sendSticker(
+            $numero, 
+            $stickerUrl, 
+            $opcionesAvanzadas
+        );
+        
+        // --- Manejo de Respuesta (Asegurando manejo de 200/201 como éxito) ---
+        $statusCode = $resultado['status_code'] ?? 0;
+        if ($statusCode >= 200 && $statusCode < 300) {
+            
+            http_response_code($statusCode);
+            $mensaje = "Sticker enviado con éxito.";
+
+            echo json_encode([
+                "ok" => true, 
+                "mensaje" => $mensaje,
+                "data" => $resultado['response']
+            ]);
+            
+        } else {
+            // ERROR (4xx, 5xx, o cURL error)
+            http_response_code($statusCode > 0 ? $statusCode : 500);
+
+            $apiResponse = $resultado['response'];
+            $specificErrorMessage = "Error al enviar el sticker.";
+            
+            // Lógica de error general para ser consistente
+            if (is_array($apiResponse) && isset($apiResponse['error'])) {
+                $specificErrorMessage = "API Error: " . (is_string($apiResponse['error']) ? $apiResponse['error'] : json_encode($apiResponse['error']));
+            }
+            
+            if (!empty($resultado['curl_error'])) {
+                $specificErrorMessage = "cURL/Network Error: " . $resultado['curl_error'];
+            }
+
+            echo json_encode([
+                "ok" => false, 
+                "error" => $specificErrorMessage,
+                "details" => $resultado['curl_error'], 
+                "api_response" => $apiResponse,
+                "http_code" => $statusCode
+            ]);
+        }
+    }
+
+    // --- FUNCIÓN 5: ENVIAR UBICACIÓN (LOCATION) CON OPCIONES AVANZADAS ---
+    public function enviarUbicacion($params): void {
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(["ok" => false, "error" => "Método no permitido. Use POST."]);
+            return;
+        }
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        // Parámetros Requeridos
+        $numero = $data['numero'] ?? null;
+        $name = $data['name'] ?? null;
+        $address = $data['address'] ?? null;
+        // Aseguramos que latitude y longitude sean floats, crucial para el payload
+        $latitude = isset($data['latitude']) ? floatval($data['latitude']) : null;
+        $longitude = isset($data['longitude']) ? floatval($data['longitude']) : null;
+        
+        // Parámetros Opcionales Avanzados
+        $opcionesAvanzadas = [
+            'delay' => $data['delay'] ?? null, 
+            'linkPreview' => $data['linkPreview'] ?? null,
+            'mentionsEveryOne' => $data['mentionsEveryOne'] ?? null,
+            'mentioned' => $data['mentioned'] ?? [],
+            'quoted' => $data['quoted'] ?? null, 
+        ];
+        
+        // Validación de parámetros
+        if (!$numero || !$name || !$address || $latitude === null || $longitude === null) {
+            http_response_code(400);
+            echo json_encode(["ok" => false, "error" => "Faltan parámetros requeridos (numero, name, address, latitude, longitude)."]);
+            return;
+        }
+
+        // --- Configuración e Inicialización (Mantener como está en tu código) ---
+        $configParams = [
+            'api_url' => EVOLUTION_API_URL,
+            'api_token' => EVOLUTION_API_TOKEN,
+            'instance_key' => EVOLUTION_INSTANCE_KEY, 
+            'api_key' => EVOLUTION_API_KEY,
+        ];
+        EvolutionApiConfig::resetInstance();
+        $config = EvolutionApiConfig::getInstance($configParams);
+        $apiClient = new EvolutionApiClient($config);
+        
+        // --- LLAMADA A LA FUNCIÓN sendLocation ---
+        $resultado = $apiClient->sendLocation(
+            $numero, 
+            $name, 
+            $address,
+            $latitude,
+            $longitude,
+            $opcionesAvanzadas
+        );
+        
+        // --- Manejo de Respuesta (Asegurando manejo de 200/201 como éxito) ---
+        $statusCode = $resultado['status_code'] ?? 0;
+        if ($statusCode >= 200 && $statusCode < 300) {
+            
+            http_response_code($statusCode);
+            $mensaje = "Ubicación enviada con éxito.";
+
+            echo json_encode([
+                "ok" => true, 
+                "mensaje" => $mensaje,
+                "data" => $resultado['response']
+            ]);
+            
+        } else {
+            // ERROR (4xx, 5xx, o cURL error)
+            http_response_code($statusCode > 0 ? $statusCode : 500);
+
+            $apiResponse = $resultado['response'];
+            $specificErrorMessage = "Error al enviar la ubicación.";
+            
+            // Lógica de error general para ser consistente
+            if (is_array($apiResponse) && isset($apiResponse['error'])) {
+                $specificErrorMessage = "API Error: " . (is_string($apiResponse['error']) ? $apiResponse['error'] : json_encode($apiResponse['error']));
+            }
+            
+            if (!empty($resultado['curl_error'])) {
+                $specificErrorMessage = "cURL/Network Error: " . $resultado['curl_error'];
+            }
+
+            echo json_encode([
+                "ok" => false, 
+                "error" => $specificErrorMessage,
+                "details" => $resultado['curl_error'], 
+                "api_response" => $apiResponse,
+                "http_code" => $statusCode
             ]);
         }
     }
@@ -925,7 +1284,6 @@ class Whatsapp extends Controllers {
             ]);
         }
     }
-
 
 
 }
