@@ -20,3 +20,5 @@ Enviar:
     ✅ Audios
     ✅ Videos    
     ✅ Estados
+    ✅ Stockers
+    ✅ Presencia
