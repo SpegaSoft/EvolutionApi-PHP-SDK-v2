@@ -92,7 +92,18 @@ class EvolutionApiClient {
         return $this->httpClient->post($url, $finalPayload);
     }
   
-   
+    /**
+     * Envía un medio (imagen, video o documento) a un número o grupo específico.
+     * Endpoint: POST /message/sendMedia/{instanceKey}
+     * * @param string $numero Número de destino (ej: 553198296801@s.whatsapp.net).
+     * @param string $mediaUrl URL o Base64 del archivo.
+     * @param string $fileName Nombre del archivo (ej: "documento.pdf").
+     * @param string $mediatype Tipo de medio ('image', 'video' o 'document').
+     * @param string $mimetype Tipo MIME del archivo (ej: 'image/png', 'application/pdf').
+     * @param string $caption Texto de la descripción (caption).
+     * @param array $opcionesAvanzadas Opciones opcionales como delay, linkPreview, mentioned, quoted, etc.
+     * @return array Resultado de la petición.
+     */
     public function sendMedia(
         string $numero, 
         string $mediaUrl, 
@@ -111,13 +122,93 @@ class EvolutionApiClient {
             "media" => $mediaUrl, 
             "fileName" => $fileName,
         ];
-
+        
+        // Incluirá las opciones avanzadas (delay, linkPreview, mentioned, mentionsEveryOne, quoted) 
+        // si están presentes y definidas en normalizePayload.
         $finalPayload = $this->normalizePayload($payloadData, $opcionesAvanzadas);
+        
         $url = $this->config->getBaseUrl("/message/sendMedia");
 
         return $this->httpClient->post($url, $finalPayload);
     }
-    
+
+    /**
+     * Envía un archivo de audio como una nota de voz de WhatsApp.
+     * Endpoint: POST /message/sendWhatsAppAudio/{instanceKey}
+     * * @param string $numero Número de destino (ej: 553198296801@s.whatsapp.net).
+     * @param string $audioUrl URL o Base64 del archivo de audio (formato recomendado: OGG/Opus).
+     * @param array $opcionesAvanzadas Opciones opcionales como delay, linkPreview, mentioned, quoted, etc.
+     * @return array Resultado de la petición.
+     */
+    public function sendWhatsAppAudio(
+        string $numero, 
+        string $audioUrl, 
+        array $opcionesAvanzadas = []
+    ): array {
+
+        $payloadData = [
+            "number" => $numero, 
+            "audio" => $audioUrl, // Este es el campo clave para el audio
+        ];
+        
+        // La función normalizePayload se encarga de añadir: 
+        // delay, linkPreview, mentionsEveryOne, mentioned, quoted, etc.
+        $finalPayload = $this->normalizePayload($payloadData, $opcionesAvanzadas);
+        
+        // Construye la URL para el endpoint específico
+        $url = $this->config->getBaseUrl("/message/sendWhatsAppAudio");
+
+        return $this->httpClient->post($url, $finalPayload);
+    }
+
+    public function sendSticker(
+        string $numero, 
+        string $stickerUrl, 
+        array $opcionesAvanzadas = []
+    ): array {
+
+        $payloadData = [
+            "number" => $numero, 
+            "sticker" => $stickerUrl, // Este es el campo clave para el sticker
+        ];
+        
+        // La función normalizePayload se encarga de añadir: 
+        // delay, linkPreview, mentionsEveryOne, mentioned, quoted, etc.
+        $finalPayload = $this->normalizePayload($payloadData, $opcionesAvanzadas);
+        
+        // Construye la URL para el endpoint específico
+        $url = $this->config->getBaseUrl("/message/sendSticker");
+
+        return $this->httpClient->post($url, $finalPayload);
+    }
+
+    public function sendLocation(
+        string $numero, 
+        string $name, 
+        string $address,
+        float $latitude, // Debe ser un número (float)
+        float $longitude, // Debe ser un número (float)
+        array $opcionesAvanzadas = []
+    ): array {
+
+        $payloadData = [
+            "number" => $numero, 
+            "name" => $name,
+            "address" => $address,
+            "latitude" => $latitude,
+            "longitude" => $longitude,
+        ];
+        
+        // La función normalizePayload se encarga de añadir: 
+        // delay, linkPreview, mentionsEveryOne, mentioned, quoted, etc.
+        $finalPayload = $this->normalizePayload($payloadData, $opcionesAvanzadas);
+        
+        // Construye la URL para el endpoint específico
+        $url = $this->config->getBaseUrl("/message/sendLocation");
+
+        return $this->httpClient->post($url, $finalPayload);
+    }
+
     // --- Métodos de Instancia y Utilidades ---
     
     public function checkIsWhatsApp(array $numbers): array {
